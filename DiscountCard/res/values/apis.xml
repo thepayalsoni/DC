@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="API_CATEGORIES">http://52.6.188.224:8080/DCProject/category</string>
+</resources>

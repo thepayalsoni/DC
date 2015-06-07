@@ -1,12 +1,11 @@
 package com.fl.ps.requests;
 
+
 import android.content.Context;
-import android.util.Log;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
-
 import com.android.volley.Response;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
@@ -19,9 +18,9 @@ public class FetchCategoryRequest extends StringRequest {
 
 	private Priority mPriority = Priority.HIGH;
 
-	public FetchCategoryRequest(Context context, Listener<String> listener, ErrorListener errorListener) {
+	public FetchCategoryRequest(Context context,String url, Listener<String> listener, ErrorListener errorListener) {
 
-		super(Method.GET, "http://52.6.188.224:8080/DCProject/service/category", listener,
+		super(Method.GET, url, listener,
 				errorListener);
 		this.listener = listener;
 		setRetryPolicy(new DefaultRetryPolicy(1000, 3, 2));

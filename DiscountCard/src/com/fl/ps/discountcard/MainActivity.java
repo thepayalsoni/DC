@@ -24,9 +24,10 @@ import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.fl.ps.adapters.NavDrawerListAdapter;
+import com.fl.ps.database.DatabaseHelper;
 import com.fl.ps.dataholders.CategoryData;
 import com.fl.ps.dataholders.NavDrawerItem;
-import com.fl.ps.parsing.CategoryItems;
+import com.fl.ps.parsing.Categories;
 import com.fl.ps.requests.FetchCategoryRequest;
 import com.fl.ps.requests.MyVolley;
 import com.google.gson.Gson;
@@ -37,7 +38,7 @@ public class MainActivity extends Activity {
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
 	private ActionBarDrawerToggle mDrawerToggle;
-	ArrayList<CategoryItems> arrCategoryItems;
+	private ArrayList<Categories> arrCategories;
 
 	// nav drawer title
 	private CharSequence mDrawerTitle;
@@ -49,11 +50,11 @@ public class MainActivity extends Activity {
 
 	private ArrayList<NavDrawerItem> navDrawerItems;
 
-	ArrayList<String> arrCategories;
 	ProgressDialog mDialog;
 	NavDrawerListAdapter adapter;
 	
 	ArrayList<CategoryData> catData;
+	private DatabaseHelper dbHelper;
 
 	@SuppressLint("NewApi")
 	@Override
@@ -114,6 +115,8 @@ public class MainActivity extends Activity {
 			// on first time display view for first nav item
 			displayView(0);
 		}
+		
+		
 	}
 
 	/**
@@ -123,7 +126,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 			// display view for selected nav drawer item
-			displayView(position+1);
+			displayView(position);
 		}
 	}
 
@@ -171,34 +174,10 @@ public class MainActivity extends Activity {
 		// update selected item and title, then close the drawer
 		mDrawerList.setItemChecked(position, true);
 		mDrawerList.setSelection(position);
-		if (arrCategoryItems != null && arrCategoryItems.size() != 0)
+		if (arrCategories != null && arrCategories.size() != 0)
 		{
-			setTitle(arrCategoryItems.get(position).getMainCategory());
-			catData = new ArrayList<CategoryData>();
-			for(int i = 0 ; i<arrCategoryItems.size();i++)
-			{
-				
-				if(arrCategoryItems.get(i).getMainCategory().equals(arrCategoryItems.get(position).getMainCategory()))
-				{
-					
-					Log.v(arrCategoryItems.get(i).getMainCategory(),arrCategoryItems.get(position).getMainCategory()+"  "+position);	
-					CategoryData cd  = new CategoryData();
-					cd.setAbout(arrCategoryItems.get(i).getAbout());
-					cd.setAddress(arrCategoryItems.get(i).getAddress());
-					cd.setDescription(arrCategoryItems.get(i).getDescription());
-					cd.setDiscount(arrCategoryItems.get(i).getDiscount());
-					cd.setId(arrCategoryItems.get(i).getId());
-					cd.setImageUrl(arrCategoryItems.get(i).getImageUrl());
-					cd.setLatitude(arrCategoryItems.get(i).getLatitude());
-					cd.setLongitude(arrCategoryItems.get(i).getLongitude());
-					cd.setMainCategory(arrCategoryItems.get(i).getMainCategory());
-					cd.setName(arrCategoryItems.get(i).getName());
-					cd.setRating(arrCategoryItems.get(i).getRating());
-					catData.add(cd);
-					
-				}
+			setTitle(arrCategories.get(position).getCategoryName());
 			
-			}
 			fragmentManager.beginTransaction().replace(R.id.frame_container, CategoryFragment.newInstance(position,catData))
 			.commit();
 
@@ -240,28 +219,36 @@ public class MainActivity extends Activity {
 			public void onResponse(String imagesString) {
 				mDialog.dismiss();
 
-				Type typeCategoryItemDetails = new TypeToken<ArrayList<CategoryItems>>() {
+				Type typeCategoryItemDetails = new TypeToken<ArrayList<Categories>>() {
 				}.getType();
 
-				arrCategoryItems = new Gson().fromJson(imagesString, typeCategoryItemDetails);
-				// downloadSlotImages(arrCategoryItems);
+				arrCategories = new Gson().fromJson(imagesString, typeCategoryItemDetails);
+				// downloadSlotImages(arrCategories);
 
-				Log.v("Test ->", arrCategoryItems.get(4).getAddress() + "<----");
-				arrCategories = new ArrayList<String>();
+			dbHelper = new DatabaseHelper(getApplicationContext());
+				dbHelper.getReadableDatabase();
 
-				for (int i = 0; i < arrCategoryItems.size(); i++) {
-					if (!arrCategories.contains(arrCategoryItems.get(i).getMainCategory())) {
-						arrCategories.add(arrCategoryItems.get(i).getMainCategory());
-						navDrawerItems.add(new NavDrawerItem(arrCategoryItems.get(i).getMainCategory()));
-					}
+				if (dbHelper.getAllCategory().size() > 0) {
+
+				} else {
+					
+					dbHelper.allCategories(arrCategories);
 				}
+				
 
-				catData = new ArrayList<CategoryData>();
+				for (int i = 0; i < dbHelper.getAllCategory().size(); i++) {
 				
+					
+						navDrawerItems.add(new NavDrawerItem(dbHelper.getAllCategory().get(i)));
+					
+				}
 				
-				
+
 				adapter = new NavDrawerListAdapter(getApplicationContext(), navDrawerItems);
 				mDrawerList.setAdapter(adapter);
+				
+
+				
 
 			}
 		};
@@ -291,8 +278,14 @@ public class MainActivity extends Activity {
 		};
 
 		RequestQueue queue = MyVolley.getRequestQueue(getApplicationContext());
-		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getApplicationContext(), onSuccess, onError);
+		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getApplicationContext(),getString(R.string.API_CATEGORIES), onSuccess, onError);
 		queue.add(lRequest);
 	}
 
+	public ArrayList<Categories> getCategries()
+	{
+		return arrCategories;
+	}
+	
+	
 }
