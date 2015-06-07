@@ -25,7 +25,6 @@ import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.fl.ps.adapters.NavDrawerListAdapter;
 import com.fl.ps.database.DatabaseHelper;
-import com.fl.ps.dataholders.CategoryData;
 import com.fl.ps.dataholders.NavDrawerItem;
 import com.fl.ps.parsing.Categories;
 import com.fl.ps.requests.FetchCategoryRequest;
@@ -52,8 +51,7 @@ public class MainActivity extends Activity {
 
 	ProgressDialog mDialog;
 	NavDrawerListAdapter adapter;
-	
-	ArrayList<CategoryData> catData;
+
 	private DatabaseHelper dbHelper;
 
 	@SuppressLint("NewApi")
@@ -81,8 +79,7 @@ public class MainActivity extends Activity {
 
 		navDrawerItems = new ArrayList<NavDrawerItem>();
 
-		// adding nav drawer items to array
-		// Home
+		
 
 		// enabling action bar app icon and behaving it as toggle button
 		getActionBar().setDisplayHomeAsUpEnabled(true);
@@ -176,9 +173,12 @@ public class MainActivity extends Activity {
 		mDrawerList.setSelection(position);
 		if (arrCategories != null && arrCategories.size() != 0)
 		{
-			setTitle(arrCategories.get(position).getCategoryName());
+			dbHelper = new DatabaseHelper(getApplicationContext());
+			dbHelper.getReadableDatabase();
+			String title = dbHelper.getAllCategoryFromDB().get(position);
+			setTitle(title);
 			
-			fragmentManager.beginTransaction().replace(R.id.frame_container, CategoryFragment.newInstance(position,catData))
+			fragmentManager.beginTransaction().replace(R.id.frame_container, CategoryFragment.newInstance(position, title))
 			.commit();
 
 		}
@@ -225,10 +225,11 @@ public class MainActivity extends Activity {
 				arrCategories = new Gson().fromJson(imagesString, typeCategoryItemDetails);
 				// downloadSlotImages(arrCategories);
 
-			dbHelper = new DatabaseHelper(getApplicationContext());
+				dbHelper = new DatabaseHelper(getApplicationContext(),arrCategories);
 				dbHelper.getReadableDatabase();
-
-				if (dbHelper.getAllCategory().size() > 0) {
+				
+				
+				if (dbHelper.getAllCategoryFromDB().size() > 0) {
 
 				} else {
 					
@@ -236,10 +237,10 @@ public class MainActivity extends Activity {
 				}
 				
 
-				for (int i = 0; i < dbHelper.getAllCategory().size(); i++) {
+				for (int i = 0; i < dbHelper.getAllCategoryFromDB().size(); i++) {
 				
 					
-						navDrawerItems.add(new NavDrawerItem(dbHelper.getAllCategory().get(i)));
+						navDrawerItems.add(new NavDrawerItem(dbHelper.getAllCategoryFromDB().get(i)));
 					
 				}
 				

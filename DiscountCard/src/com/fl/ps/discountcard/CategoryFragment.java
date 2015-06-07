@@ -1,14 +1,17 @@
 package com.fl.ps.discountcard;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 import android.app.Fragment;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,27 +22,40 @@ import android.widget.RelativeLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.fl.ps.dataholders.CategoryData;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response.ErrorListener;
+import com.android.volley.Response.Listener;
+import com.android.volley.VolleyError;
+import com.fl.ps.database.DatabaseHelper;
+import com.fl.ps.parsing.CategoryItems;
+import com.fl.ps.requests.FetchCategoryRequest;
+import com.fl.ps.requests.MyVolley;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 public class CategoryFragment extends Fragment {
 	private static final String ARG_CATEGORY_NUMBER = "section_number";
+	private static final String ARG_CATEGORY_TITLE = "title";
 
 	DCListAdapter adapter;
 	RecyclerView mRecyclerView;
-	static ArrayList<CategoryData> deals;
-	
+	static ArrayList<CategoryItems> deals;
+	ProgressDialog mDialog;
+	private DatabaseHelper dbHelper;
 	
 	/**
 	 * Returns a new instance of this fragment for the given category number.
 	 */
-	public static CategoryFragment newInstance(int categoryNumber, ArrayList<CategoryData> categoryData) {
+	public static CategoryFragment newInstance(int categoryNumber, String title) {
 		CategoryFragment fragment = new CategoryFragment();
 		Bundle args = new Bundle();
 		args.putInt(ARG_CATEGORY_NUMBER, categoryNumber);
+		args.putString(ARG_CATEGORY_TITLE, title);
 		fragment.setArguments(args);
-		deals = categoryData;
+		
+		
 		return fragment;
 	}
 
@@ -49,17 +65,27 @@ public class CategoryFragment extends Fragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		// Inflate the layout for this fragment
-		Toast.makeText(getActivity(), "Fragmnet" + getArguments().getInt(ARG_CATEGORY_NUMBER), Toast.LENGTH_LONG)
+		Toast.makeText(getActivity(), "Fragmnet" + getArguments().getInt(ARG_CATEGORY_NUMBER) +getArguments().getString(ARG_CATEGORY_TITLE), Toast.LENGTH_LONG)
 				.show();
 
 		View v = inflater.inflate(R.layout.fragment_main, container, false);
 		mRecyclerView = (RecyclerView) v.findViewById(R.id.list);
 		mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 		mRecyclerView.setItemAnimator(new DefaultItemAnimator());
-
-		adapter = new DCListAdapter(getActivity().getApplicationContext());
 		
-		mRecyclerView.setAdapter(adapter);
+		
+		dbHelper = new DatabaseHelper(getActivity().getApplicationContext());
+		dbHelper.getReadableDatabase();
+		
+		mDialog = new ProgressDialog(getActivity());
+		mDialog.setCancelable(false);
+		mDialog.setMessage("Wait...");
+		mDialog.show();
+		
+		
+		getCategoriesDataFromServer(getArguments().getString(ARG_CATEGORY_TITLE));
+
+		
 		return v;
 	}
 
@@ -77,12 +103,12 @@ public class CategoryFragment extends Fragment {
 		DCListAdapter(Context context) {
 			this.context = context;
 			inflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			//DatabaseHelper helper = new DatabaseHelper(getActivity());
-			//deals = new ArrayList<Database>();
-			/*deals = helper.getAllDeals(helper.getAllCategory().size() > 0 ? helper.getAllCategory().get(
+			/*DatabaseHelper helper = new DatabaseHelper(getActivity());
+			deals = new ArrayList<CategoryItems>();
+			deals = helper.getAllDeals(helper.getAllCategoryFromDB().size() > 0 ? helper.getAllCategoryFromDB().get(
 					getArguments().getInt(ARG_CATEGORY_NUMBER)) : "clothing");
-			Log.v("deals", "size " + deals.size());*/
-
+			Log.v("deals", "size " + deals.size());
+*/
 			imloader = ImageLoader.getInstance();
 			imloader.init(ImageLoaderConfiguration.createDefault(context));
 			
@@ -197,4 +223,57 @@ public class CategoryFragment extends Fragment {
 		}
 
 	}*/
+	
+	
+	public void getCategoriesDataFromServer(String title) {
+
+		Listener<String> onSuccess = new Listener<String>() {
+
+			@Override
+			public void onResponse(String imagesString) {
+				mDialog.dismiss();
+
+				Type typeCategoryItemDetails = new TypeToken<ArrayList<CategoryItems>>() {
+				}.getType();
+
+				deals = new Gson().fromJson(imagesString, typeCategoryItemDetails);
+				
+				dbHelper.writeToTable(deals);
+				
+				adapter = new DCListAdapter(getActivity().getApplicationContext());
+				
+				mRecyclerView.setAdapter(adapter);
+			
+
+			}
+		};
+
+		ErrorListener onError = new ErrorListener() {
+
+			@Override
+			public void onErrorResponse(VolleyError arg0) {
+				mDialog.dismiss();
+				/*
+				 * dismissProgressDialog();
+				 * showAlertDialog(FillerUpHomeActivity.this, null, new
+				 * CustomVolleyError(arg0).getErrorMessage(), new
+				 * DialogInterface.OnClickListener() {
+				 * 
+				 * @Override public void onClick(DialogInterface dialog, int
+				 * which) { dialog.dismiss(); finish(); }
+				 * 
+				 * });
+				 */
+
+				Log.v("error", new VolleyError(arg0).getMessage());
+
+				Toast.makeText(getActivity(), "Failed to parse " + new VolleyError(arg0).getMessage(), 1)
+						.show();
+			}
+		};
+
+		RequestQueue queue = MyVolley.getRequestQueue(getActivity().getApplicationContext());
+		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getActivity().getApplicationContext(),getString(R.string.API_CATEGORY_DETAILS)+title, onSuccess, onError);
+		queue.add(lRequest);
+	}
 }

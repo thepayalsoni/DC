@@ -1910,6 +1910,7 @@ containing a value of this type.
     }
     public static final class string {
         public static final int API_CATEGORIES=0x7f0b0010;
+        public static final int API_CATEGORY_DETAILS=0x7f0b0011;
         /**  Content description for the action bar "home" affordance. [CHAR LIMIT=NONE] 
          */
         public static final int abc_action_bar_home_description=0x7f0b0001;
@@ -1966,9 +1967,9 @@ containing a value of this type.
         /**  Content description for the Toolbar icon used to collapse an expanded action mode. [CHAR LIMIT=NONE] 
          */
         public static final int abc_toolbar_collapse_description=0x7f0b0004;
-        public static final int action_settings=0x7f0b0013;
-        public static final int app_name=0x7f0b0011;
-        public static final int hello_world=0x7f0b0012;
+        public static final int action_settings=0x7f0b0014;
+        public static final int app_name=0x7f0b0012;
+        public static final int hello_world=0x7f0b0013;
     }
     public static final class style {
         /** 

@@ -9,15 +9,17 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+
 import com.fl.ps.discountcard.MainActivity;
 import com.fl.ps.parsing.Categories;
+import com.fl.ps.parsing.CategoryItems;
 
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 	String TAG = "DATABASEHELPER";
 
 	private static final String DATABASE_NAME = "discountcoupon.db";
-	private static final int DATABASE_VERSION = 2;
+	private static final int DATABASE_VERSION = 3;
 
 	String ALL_CATEGORY_TABLE = "tab_all_categories";
 
@@ -26,13 +28,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	ArrayList<Database> db_data;
 
+	public DatabaseHelper(Context context, ArrayList<Categories> catageor) {
+		super(context, DATABASE_NAME, null, DATABASE_VERSION);
+		db_data = getCategoriesTableName(catageor);
+
+		Log.v("cat",catageor.size()+"-------------------------");
+	}
+	
 	public DatabaseHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		//db_data = getCategoriesTableName(main.getCategries());
+	
 
 	}
 	
-	/*public ArrayList<Database> getCategoriesTableName(ArrayList<Categories> arrayList) {
+	public ArrayList<Database> getCategoriesTableName(ArrayList<Categories> arrayList) {
 		ArrayList<Database> allCategories = new ArrayList<Database>();
 
 		for (int i = 0; i < arrayList.size(); i++) {
@@ -43,7 +52,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		}
 
 		return allCategories;
-	}*/
+	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
@@ -53,9 +62,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		db.execSQL(" create table if not exists " + ALL_CATEGORY_TABLE
 				+ "(category_id integer primary key autoincrement not null, " + CATEGORY + " text unique "+" ,category_key text unique);");
 
-		/*for (int i = 0; i < db_data.size(); i++) {
+		
+		for (int i = 0; i < db_data.size(); i++) {
 			db.execSQL(createTable(db_data.get(i)));
-		}*/
+		}
 	}
 
 	@Override
@@ -63,9 +73,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 		db.execSQL("DROP TABLE IF EXISTS " + ALL_CATEGORY_TABLE);
 
-		/*for (int i = 0; i < db_data.size(); i++) {
+		for (int i = 0; i < db_data.size(); i++) {
 			db.execSQL("DROP TABLE IF EXISTS " + db_data.get(i).getTableName());
-		}*/
+		}
+		onCreate(db);
 
 	}
 
@@ -74,13 +85,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		String create = " create table if not exists " + db.getTableName()
 				+ "(_id integer primary key autoincrement not null, " + " col_name text not null, "
 				+ " col_address text not null, " + " col_about text not null, " + " col_discount text not null, "
-				+ " col_description text not null, " + " col_rating text not null, " + " col_location text not null, "
+				+ " col_description text not null, " + " col_rating text not null, "
+				+ " col_item_id text not null unique, "+ " col_longitude text not null, "+ " col_latitude text not null, "
 				+ " col_photopath text not null " + " );";
 
 		return create;
 	}
 
-	public void writeToTable(ArrayList<Database> databaseValues) {
+	public void writeToTable(ArrayList<CategoryItems> databaseValues) {
 
 		SQLiteDatabase db = this.getWritableDatabase();
 
@@ -92,10 +104,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			values.put("col_discount", databaseValues.get(i).getDiscount());
 			values.put("col_description", databaseValues.get(i).getDescription());
 			values.put("col_rating", databaseValues.get(i).getRating());
-			values.put("col_location", databaseValues.get(i).getLocation());
-			values.put("col_photopath", databaseValues.get(i).getPhotoPath());
+			values.put("col_latitude", databaseValues.get(i).getLatitude());
+			values.put("col_longitude", databaseValues.get(i).getLongitude());
+			values.put("col_item_id", databaseValues.get(i).getId());
+			values.put("col_photopath", databaseValues.get(i).getImageUrl());
 
-			db.insert(databaseValues.get(i).getTableName(), null, values);
+			db.insert(databaseValues.get(i).getMainCategory().replace(" ", "_").toLowerCase(Locale.getDefault()).trim(), null, values);
 		}
 
 		db.close();
@@ -116,7 +130,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		db.close();
 	}
 
-	public ArrayList<String> getAllCategory()
+	public ArrayList<String> getAllCategoryFromDB()
 	{
 		
 		String query ="Select * from "+ALL_CATEGORY_TABLE;
