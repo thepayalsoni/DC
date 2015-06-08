@@ -19,25 +19,25 @@ public class CategoryItems implements Serializable {
 
 	@SerializedName("address")
 	private String address;
-	
+
 	@SerializedName("about")
 	private String about;
-	
+
 	@SerializedName("discount")
 	private String discount;
-	
+
 	@SerializedName("discription")
 	private String description;
-	
+
 	@SerializedName("rating")
 	private String rating;
-	
+
 	@SerializedName("latitude")
 	private String latitude;
 
 	@SerializedName("longitude")
 	private String longitude;
-	
+
 	@SerializedName("url")
 	private String imageUrl;
 

@@ -7,6 +7,8 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
@@ -53,6 +55,9 @@ public class MainActivity extends Activity {
 	NavDrawerListAdapter adapter;
 
 	private DatabaseHelper dbHelper;
+	
+	SharedPreferences sharedpreferences ;
+	String DCPrefs;
 
 	@SuppressLint("NewApi")
 	@Override
@@ -61,12 +66,9 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 		mTitle = mDrawerTitle = getTitle();
+		// setting the nav drawer list adapter
 
-		mDialog = new ProgressDialog(MainActivity.this);
-		mDialog.setCancelable(false);
-		mDialog.setMessage("Wait...");
-		mDialog.show();
-		getCategoriesFromServer();
+		navDrawerItems = new ArrayList<NavDrawerItem>();
 
 		// load slide menu items
 
@@ -75,20 +77,40 @@ public class MainActivity extends Activity {
 
 		mDrawerList.setOnItemClickListener(new SlideMenuClickListener());
 
-		// setting the nav drawer list adapter
-
-		navDrawerItems = new ArrayList<NavDrawerItem>();
-
 		
+		
+		sharedpreferences = getSharedPreferences(DCPrefs, Context.MODE_PRIVATE);
+		
+		if (sharedpreferences.getString("tableexists", "false").equals("true")) {
+			
+			dbHelper = new DatabaseHelper(getApplicationContext());
+			dbHelper.getReadableDatabase();
+			for (int i = 0; i < dbHelper.getAllCategoryFromDB().size(); i++) {
+
+				navDrawerItems.add(new NavDrawerItem(dbHelper.getAllCategoryFromDB().get(i)));
+
+			}
+
+			adapter = new NavDrawerListAdapter(getApplicationContext(), navDrawerItems);
+			mDrawerList.setAdapter(adapter);
+		}
+
+		else {
+			mDialog = new ProgressDialog(MainActivity.this);
+			mDialog.setCancelable(false);
+			mDialog.setMessage("Wait...");
+			mDialog.show();
+			getCategoriesFromServer();
+		}
 
 		// enabling action bar app icon and behaving it as toggle button
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		getActionBar().setHomeButtonEnabled(true);
 
 		mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_menu_black_24dp, // nav
-																								// menu
-																								// toggle
-																								// icon
+				// menu
+				// toggle
+				// icon
 				R.string.app_name, // nav drawer open - description for
 									// accessibility
 				R.string.app_name // nav drawer close - description for
@@ -108,12 +130,11 @@ public class MainActivity extends Activity {
 		};
 		mDrawerLayout.setDrawerListener(mDrawerToggle);
 
-		if (savedInstanceState == null) {
+		/*if (savedInstanceState == null) {
 			// on first time display view for first nav item
 			displayView(0);
-		}
-		
-		
+		}*/
+
 	}
 
 	/**
@@ -163,23 +184,20 @@ public class MainActivity extends Activity {
 	 * Diplaying fragment view for selected nav drawer list item
 	 * */
 	private void displayView(int position) {
-		
-		
 
 		FragmentManager fragmentManager = getFragmentManager();
-		
+
 		// update selected item and title, then close the drawer
 		mDrawerList.setItemChecked(position, true);
 		mDrawerList.setSelection(position);
-		if (arrCategories != null && arrCategories.size() != 0)
-		{
+		if (dbHelper.getAllCategoryFromDB() != null && dbHelper.getAllCategoryFromDB().size() > 0) {
 			dbHelper = new DatabaseHelper(getApplicationContext());
 			dbHelper.getReadableDatabase();
 			String title = dbHelper.getAllCategoryFromDB().get(position);
 			setTitle(title);
-			
-			fragmentManager.beginTransaction().replace(R.id.frame_container, CategoryFragment.newInstance(position, title))
-			.commit();
+
+			fragmentManager.beginTransaction()
+					.replace(R.id.frame_container, CategoryFragment.newInstance(position, title)).commit();
 
 		}
 		mDrawerLayout.closeDrawer(mDrawerList);
@@ -225,31 +243,24 @@ public class MainActivity extends Activity {
 				arrCategories = new Gson().fromJson(imagesString, typeCategoryItemDetails);
 				// downloadSlotImages(arrCategories);
 
-				dbHelper = new DatabaseHelper(getApplicationContext(),arrCategories);
+				dbHelper = new DatabaseHelper(getApplicationContext(), arrCategories);
 				dbHelper.getReadableDatabase();
-				
-				
+
 				if (dbHelper.getAllCategoryFromDB().size() > 0) {
 
 				} else {
-					
+
 					dbHelper.allCategories(arrCategories);
 				}
-				
 
 				for (int i = 0; i < dbHelper.getAllCategoryFromDB().size(); i++) {
-				
-					
-						navDrawerItems.add(new NavDrawerItem(dbHelper.getAllCategoryFromDB().get(i)));
-					
+
+					navDrawerItems.add(new NavDrawerItem(dbHelper.getAllCategoryFromDB().get(i)));
+
 				}
-				
 
 				adapter = new NavDrawerListAdapter(getApplicationContext(), navDrawerItems);
 				mDrawerList.setAdapter(adapter);
-				
-
-				
 
 			}
 		};
@@ -279,14 +290,13 @@ public class MainActivity extends Activity {
 		};
 
 		RequestQueue queue = MyVolley.getRequestQueue(getApplicationContext());
-		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getApplicationContext(),getString(R.string.API_CATEGORIES), onSuccess, onError);
+		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getApplicationContext(),
+				getString(R.string.API_CATEGORIES), onSuccess, onError);
 		queue.add(lRequest);
 	}
 
-	public ArrayList<Categories> getCategries()
-	{
+	public ArrayList<Categories> getCategries() {
 		return arrCategories;
 	}
-	
-	
+
 }

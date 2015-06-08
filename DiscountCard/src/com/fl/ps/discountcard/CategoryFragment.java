@@ -2,6 +2,7 @@ package com.fl.ps.discountcard;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import android.app.Fragment;
 import android.app.ProgressDialog;
@@ -44,7 +45,7 @@ public class CategoryFragment extends Fragment {
 	static ArrayList<CategoryItems> deals;
 	ProgressDialog mDialog;
 	private DatabaseHelper dbHelper;
-	
+
 	/**
 	 * Returns a new instance of this fragment for the given category number.
 	 */
@@ -54,8 +55,7 @@ public class CategoryFragment extends Fragment {
 		args.putInt(ARG_CATEGORY_NUMBER, categoryNumber);
 		args.putString(ARG_CATEGORY_TITLE, title);
 		fragment.setArguments(args);
-		
-		
+
 		return fragment;
 	}
 
@@ -65,37 +65,52 @@ public class CategoryFragment extends Fragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		// Inflate the layout for this fragment
-		Toast.makeText(getActivity(), "Fragmnet" + getArguments().getInt(ARG_CATEGORY_NUMBER) +getArguments().getString(ARG_CATEGORY_TITLE), Toast.LENGTH_LONG)
-				.show();
+		Toast.makeText(getActivity(),
+				"Fragmnet" + getArguments().getInt(ARG_CATEGORY_NUMBER) + getArguments().getString(ARG_CATEGORY_TITLE),
+				Toast.LENGTH_LONG).show();
 
 		View v = inflater.inflate(R.layout.fragment_main, container, false);
 		mRecyclerView = (RecyclerView) v.findViewById(R.id.list);
 		mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 		mRecyclerView.setItemAnimator(new DefaultItemAnimator());
-		
-		
+
 		dbHelper = new DatabaseHelper(getActivity().getApplicationContext());
 		dbHelper.getReadableDatabase();
 		
-		mDialog = new ProgressDialog(getActivity());
-		mDialog.setCancelable(false);
-		mDialog.setMessage("Wait...");
-		mDialog.show();
 		
-		
-		getCategoriesDataFromServer(getArguments().getString(ARG_CATEGORY_TITLE));
+		DatabaseHelper helper = new DatabaseHelper(getActivity());
+		deals = new ArrayList<CategoryItems>();
+		deals = helper.getAllDeals(getArguments().getString(ARG_CATEGORY_TITLE).replace(" ", "_").toLowerCase(Locale.getDefault()).trim());
 
 		
+		if(deals.size()>0)
+		{
+
+			adapter = new DCListAdapter(getActivity().getApplicationContext());
+
+			mRecyclerView.setAdapter(adapter);
+		}
+		else
+		{
+			mDialog = new ProgressDialog(getActivity());
+			mDialog.setCancelable(false);
+			mDialog.setMessage("Wait...");
+			mDialog.show();
+
+			getCategoriesDataFromServer(getArguments().getString(ARG_CATEGORY_TITLE));
+		}
+		
+		
+
 		return v;
 	}
 
-	
 	// //////////////////////////////////////////////////////////////
 
 	class DCListAdapter extends RecyclerView.Adapter<ViewHolder> {
 
 		LayoutInflater inflater;
-		//ArrayList<Database> deals = new ArrayList<Database>();
+		// ArrayList<Database> deals = new ArrayList<Database>();
 		Context context;
 		Bitmap bm;
 		ImageLoader imloader;
@@ -106,12 +121,11 @@ public class CategoryFragment extends Fragment {
 			/*DatabaseHelper helper = new DatabaseHelper(getActivity());
 			deals = new ArrayList<CategoryItems>();
 			deals = helper.getAllDeals(helper.getAllCategoryFromDB().size() > 0 ? helper.getAllCategoryFromDB().get(
-					getArguments().getInt(ARG_CATEGORY_NUMBER)) : "clothing");
+					getArguments().getInt(ARG_CATEGORY_NUMBER)) : "clothing");*/
 			Log.v("deals", "size " + deals.size());
-*/
+
 			imloader = ImageLoader.getInstance();
 			imloader.init(ImageLoaderConfiguration.createDefault(context));
-			
 
 		}
 
@@ -129,14 +143,14 @@ public class CategoryFragment extends Fragment {
 
 		@Override
 		public void onBindViewHolder(ViewHolder holder, int position) {
-			//Log.v("deals", Uri.fromFile(new File(deals.get(position).getPhotoPath())).toString());
+			
 			holder.name.setText(deals.get(position).getName());
 
 			imloader.displayImage(deals.get(position).getImageUrl(), holder.image);
 
 			holder.location.setText(deals.get(position).getAddress());
-			
-			holder.rating.setRating((Float.parseFloat(deals.get(position).getRating())/100)*5);
+
+			holder.rating.setRating((Float.parseFloat(deals.get(position).getRating()) / 100) * 5);
 
 		}
 
@@ -155,13 +169,14 @@ public class CategoryFragment extends Fragment {
 		ImageView image;
 		TextView name, location;
 		RatingBar rating;
+
 		public ViewHolder(View itemView) {
 			super(itemView);
 			name = (TextView) itemView.findViewById(R.id.item_name);
 			location = (TextView) itemView.findViewById(R.id.item_location);
 			image = (ImageView) itemView.findViewById(R.id.item_image);
-			rating = (RatingBar)itemView.findViewById(R.id.rating);
-			
+			rating = (RatingBar) itemView.findViewById(R.id.rating);
+
 			RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT,
 					LayoutParams.WRAP_CONTENT);
 
@@ -171,60 +186,46 @@ public class CategoryFragment extends Fragment {
 		}
 
 	}
-	
-/*	private void downloadImages(String path) {
 
-		try {
-			if (path == null) {
-				return;
-			}
-			final DisplayImageOptions optionsCard = new DisplayImageOptions.Builder()
-					.cacheInMemory(true).cacheOnDisc(true).build();
+	/*
+	 * private void downloadImages(String path) {
+	 * 
+	 * try { if (path == null) { return; } final DisplayImageOptions optionsCard
+	 * = new DisplayImageOptions.Builder()
+	 * .cacheInMemory(true).cacheOnDisc(true).build();
+	 * 
+	 * String currentItem = path;
+	 * 
+	 * if (currentItem != null) { imageLoader.loadImage(currentItem,
+	 * optionsCard, new ImageLoadingListener() {
+	 * 
+	 * @Override public void onLoadingStarted(String arg0, View arg1) {
+	 * 
+	 * }
+	 * 
+	 * @Override public void onLoadingFailed(String arg0, View arg1, FailReason
+	 * arg2) { Log.e("Image loading error", arg2.toString()); }
+	 * 
+	 * @Override public void onLoadingComplete(String arg0, View arg1, Bitmap
+	 * bmp) {
+	 * 
+	 * HashMap<String, Object> slotItemMap = new HashMap<String, Object>();
+	 * slotItemMap.put("image", new SoftReference<Bitmap>(bmp));
+	 * slotItemMap.put("id", id);
+	 * 
+	 * slotImages.add(slotItemMap);
+	 * 
+	 * }
+	 * 
+	 * @Override public void onLoadingCancelled(String arg0, View arg1) {
+	 * 
+	 * } }); }
+	 * 
+	 * } catch (Exception e) { e.printStackTrace(); }
+	 * 
+	 * }
+	 */
 
-			String currentItem = path;
-
-			if (currentItem != null) {
-				imageLoader.loadImage(currentItem, optionsCard,
-						new ImageLoadingListener() {
-							@Override
-							public void onLoadingStarted(String arg0, View arg1) {
-
-							}
-
-							@Override
-							public void onLoadingFailed(String arg0, View arg1,
-									FailReason arg2) {
-								Log.e("Image loading error", arg2.toString());
-							}
-
-							@Override
-							public void onLoadingComplete(String arg0,
-									View arg1, Bitmap bmp) {
-
-								HashMap<String, Object> slotItemMap = new HashMap<String, Object>();
-								slotItemMap.put("image",
-										new SoftReference<Bitmap>(bmp));
-								slotItemMap.put("id", id);
-
-								slotImages.add(slotItemMap);
-
-							}
-
-							@Override
-							public void onLoadingCancelled(String arg0,
-									View arg1) {
-
-							}
-						});
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-	}*/
-	
-	
 	public void getCategoriesDataFromServer(String title) {
 
 		Listener<String> onSuccess = new Listener<String>() {
@@ -237,13 +238,12 @@ public class CategoryFragment extends Fragment {
 				}.getType();
 
 				deals = new Gson().fromJson(imagesString, typeCategoryItemDetails);
-				
+
 				dbHelper.writeToTable(deals);
-				
+
 				adapter = new DCListAdapter(getActivity().getApplicationContext());
-				
+
 				mRecyclerView.setAdapter(adapter);
-			
 
 			}
 		};
@@ -267,13 +267,13 @@ public class CategoryFragment extends Fragment {
 
 				Log.v("error", new VolleyError(arg0).getMessage());
 
-				Toast.makeText(getActivity(), "Failed to parse " + new VolleyError(arg0).getMessage(), 1)
-						.show();
+				Toast.makeText(getActivity(), "Failed to parse " + new VolleyError(arg0).getMessage(), 1).show();
 			}
 		};
 
 		RequestQueue queue = MyVolley.getRequestQueue(getActivity().getApplicationContext());
-		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getActivity().getApplicationContext(),getString(R.string.API_CATEGORY_DETAILS)+title, onSuccess, onError);
+		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getActivity().getApplicationContext(),
+				getString(R.string.API_CATEGORY_DETAILS) + title, onSuccess, onError);
 		queue.add(lRequest);
 	}
 }
