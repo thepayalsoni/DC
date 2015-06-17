@@ -1,10 +1,11 @@
 package com.fl.ps.parsing;
 
 import java.io.Serializable;
+import java.util.Comparator;
 
 import com.google.gson.annotations.SerializedName;
 
-public class CategoryItems implements Serializable {
+public class CategoryItems implements Serializable,Comparator<CategoryItems> {
 
 	private static final long serialVersionUID = -5423221727488998760L;
 
@@ -33,13 +34,15 @@ public class CategoryItems implements Serializable {
 	private String rating;
 
 	@SerializedName("latitude")
-	private String latitude;
+	private Double latitude;
 
 	@SerializedName("longitude")
-	private String longitude;
+	private Double longitude;
 
 	@SerializedName("url")
 	private String imageUrl;
+
+	private Double distance;
 
 	public String getMainCategory() {
 		return mainCategory;
@@ -105,19 +108,19 @@ public class CategoryItems implements Serializable {
 		this.rating = rating;
 	}
 
-	public String getLatitude() {
+	public Double getLatitude() {
 		return latitude;
 	}
 
-	public void setLatitude(String latitude) {
+	public void setLatitude(Double latitude) {
 		this.latitude = latitude;
 	}
 
-	public String getLongitude() {
+	public Double getLongitude() {
 		return longitude;
 	}
 
-	public void setLongitude(String longitude) {
+	public void setLongitude(Double longitude) {
 		this.longitude = longitude;
 	}
 
@@ -128,5 +131,23 @@ public class CategoryItems implements Serializable {
 	public void setImageUrl(String imageUrl) {
 		this.imageUrl = imageUrl;
 	}
+
+	public Double getDistance() {
+		return distance;
+	}
+
+	public void setDistance(Double distance) {
+		this.distance = distance;
+	}
+
+	@Override
+	public int compare(CategoryItems o1, CategoryItems o2) {
+		// TODO Auto-generated method stub
+		 return o1.distance > o2.distance ? 1 : (o1.distance < o2.distance ? -1 : 0);
+	}
+
+	
+
+	
 
 }

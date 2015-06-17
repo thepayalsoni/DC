@@ -13,12 +13,12 @@ import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
 
 
-public class FetchCategoryRequest extends StringRequest {
+public class FetchCategoryGetRequest extends StringRequest {
 	private Listener<String> listener;
 
 	private Priority mPriority = Priority.HIGH;
 
-	public FetchCategoryRequest(Context context,String url, Listener<String> listener, ErrorListener errorListener) {
+	public FetchCategoryGetRequest(Context context,String url, Listener<String> listener, ErrorListener errorListener) {
 
 		super(Method.GET, url, listener,
 				errorListener);

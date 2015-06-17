@@ -1772,8 +1772,10 @@ containing a value of this type.
         public static final int abc_textfield_search_activated_mtrl_alpha=0x7f020030;
         public static final int abc_textfield_search_default_mtrl_alpha=0x7f020031;
         public static final int abc_textfield_search_material=0x7f020032;
-        public static final int ic_launcher=0x7f020033;
-        public static final int ic_menu_black_24dp=0x7f020034;
+        public static final int discount_tag=0x7f020033;
+        public static final int ic_launcher=0x7f020034;
+        public static final int ic_menu_black_24dp=0x7f020035;
+        public static final int image=0x7f020036;
     }
     public static final class id {
         public static final int action_bar=0x7f0a0031;
@@ -1789,11 +1791,11 @@ containing a value of this type.
         public static final int action_mode_bar=0x7f0a002e;
         public static final int action_mode_bar_stub=0x7f0a002d;
         public static final int action_mode_close_button=0x7f0a0020;
-        public static final int action_settings=0x7f0a0048;
+        public static final int action_settings=0x7f0a0049;
         public static final int activity_chooser_view_content=0x7f0a0021;
         public static final int always=0x7f0a0014;
         public static final int beginning=0x7f0a001b;
-        public static final int bottomLL=0x7f0a0043;
+        public static final int bottomLL=0x7f0a0044;
         public static final int checkbox=0x7f0a0029;
         public static final int collapseActionView=0x7f0a0015;
         public static final int decor_content_parent=0x7f0a002f;
@@ -1812,10 +1814,11 @@ containing a value of this type.
         public static final int icon=0x7f0a0026;
         public static final int ifRoom=0x7f0a0016;
         public static final int image=0x7f0a0023;
+        public static final int item_discount=0x7f0a0043;
         public static final int item_image=0x7f0a0042;
-        public static final int item_location=0x7f0a0045;
-        public static final int item_name=0x7f0a0044;
-        public static final int list=0x7f0a0047;
+        public static final int item_location=0x7f0a0046;
+        public static final int item_name=0x7f0a0045;
+        public static final int list=0x7f0a0048;
         public static final int listMode=0x7f0a000a;
         public static final int list_item=0x7f0a0025;
         public static final int list_slidermenu=0x7f0a0041;
@@ -1826,7 +1829,7 @@ containing a value of this type.
         public static final int progress_circular=0x7f0a0007;
         public static final int progress_horizontal=0x7f0a0008;
         public static final int radio=0x7f0a002b;
-        public static final int rating=0x7f0a0046;
+        public static final int rating=0x7f0a0047;
         public static final int search_badge=0x7f0a0035;
         public static final int search_bar=0x7f0a0034;
         public static final int search_button=0x7f0a0036;
@@ -1909,8 +1912,16 @@ containing a value of this type.
         public static final int main=0x7f0c0000;
     }
     public static final class string {
+        public static final int ALL_CATEGORY_TABLE=0x7f0b0014;
         public static final int API_CATEGORIES=0x7f0b0010;
         public static final int API_CATEGORY_DETAILS=0x7f0b0011;
+        public static final int DATABASE_NAME=0x7f0b0012;
+        public static final int DATABASE_VERSION=0x7f0b0013;
+        /**  shared prefs 
+         */
+        public static final int PREFS_DC=0x7f0b0015;
+        public static final int PREFS_DC_KEY_LAST_DATABASE_DELETE_TIME=0x7f0b0017;
+        public static final int PREFS_DC_KEY_TABLE_EXISTS=0x7f0b0016;
         /**  Content description for the action bar "home" affordance. [CHAR LIMIT=NONE] 
          */
         public static final int abc_action_bar_home_description=0x7f0b0001;
@@ -1967,9 +1978,9 @@ containing a value of this type.
         /**  Content description for the Toolbar icon used to collapse an expanded action mode. [CHAR LIMIT=NONE] 
          */
         public static final int abc_toolbar_collapse_description=0x7f0b0004;
-        public static final int action_settings=0x7f0b0014;
-        public static final int app_name=0x7f0b0012;
-        public static final int hello_world=0x7f0b0013;
+        public static final int action_settings=0x7f0b001a;
+        public static final int app_name=0x7f0b0018;
+        public static final int hello_world=0x7f0b0019;
     }
     public static final class style {
         /** 

@@ -2,12 +2,16 @@ package com.fl.ps.discountcard;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.FragmentManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -26,10 +30,11 @@ import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.fl.ps.adapters.NavDrawerListAdapter;
+import com.fl.ps.broadcastreceivers.DeleteDataReceiver;
 import com.fl.ps.database.DatabaseHelper;
 import com.fl.ps.dataholders.NavDrawerItem;
 import com.fl.ps.parsing.Categories;
-import com.fl.ps.requests.FetchCategoryRequest;
+import com.fl.ps.requests.FetchCategoryGetRequest;
 import com.fl.ps.requests.MyVolley;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -40,24 +45,17 @@ public class MainActivity extends Activity {
 	private ListView mDrawerList;
 	private ActionBarDrawerToggle mDrawerToggle;
 	private ArrayList<Categories> arrCategories;
-
-	// nav drawer title
 	private CharSequence mDrawerTitle;
-
-	// used to store app title
 	private CharSequence mTitle;
-
-	// slide menu items
-
 	private ArrayList<NavDrawerItem> navDrawerItems;
-
-	ProgressDialog mDialog;
-	NavDrawerListAdapter adapter;
+	private ProgressDialog mDialog;
+	private NavDrawerListAdapter adapter;
 
 	private DatabaseHelper dbHelper;
-	
-	SharedPreferences sharedpreferences ;
-	String DCPrefs;
+
+	SharedPreferences sharedpreferences;
+
+	private PendingIntent pendingIntent;
 
 	@SuppressLint("NewApi")
 	@Override
@@ -66,23 +64,17 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 		mTitle = mDrawerTitle = getTitle();
-		// setting the nav drawer list adapter
-
 		navDrawerItems = new ArrayList<NavDrawerItem>();
-
-		// load slide menu items
 
 		mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		mDrawerList = (ListView) findViewById(R.id.list_slidermenu);
 
 		mDrawerList.setOnItemClickListener(new SlideMenuClickListener());
 
-		
-		
-		sharedpreferences = getSharedPreferences(DCPrefs, Context.MODE_PRIVATE);
-		
-		if (sharedpreferences.getString("tableexists", "false").equals("true")) {
-			
+		sharedpreferences = getSharedPreferences(getString(R.string.PREFS_DC), Context.MODE_PRIVATE);
+
+		if (sharedpreferences.getString(getString(R.string.PREFS_DC_KEY_TABLE_EXISTS), "false").equals("true")) {
+
 			dbHelper = new DatabaseHelper(getApplicationContext());
 			dbHelper.getReadableDatabase();
 			for (int i = 0; i < dbHelper.getAllCategoryFromDB().size(); i++) {
@@ -103,47 +95,47 @@ public class MainActivity extends Activity {
 			getCategoriesFromServer();
 		}
 
-		// enabling action bar app icon and behaving it as toggle button
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		getActionBar().setHomeButtonEnabled(true);
 
 		mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_menu_black_24dp, // nav
-				// menu
-				// toggle
-				// icon
-				R.string.app_name, // nav drawer open - description for
-									// accessibility
-				R.string.app_name // nav drawer close - description for
-									// accessibility
-		) {
+
+				R.string.app_name, R.string.app_name) {
 			public void onDrawerClosed(View view) {
 				getActionBar().setTitle(mTitle);
-				// calling onPrepareOptionsMenu() to show action bar icons
+
 				invalidateOptionsMenu();
 			}
 
 			public void onDrawerOpened(View drawerView) {
 				getActionBar().setTitle(mDrawerTitle);
-				// calling onPrepareOptionsMenu() to hide action bar icons
+
 				invalidateOptionsMenu();
 			}
 		};
 		mDrawerLayout.setDrawerListener(mDrawerToggle);
+		Intent alarmIntent = new Intent(MainActivity.this, DeleteDataReceiver.class);
+		pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, alarmIntent, 0);
 
-		/*if (savedInstanceState == null) {
-			// on first time display view for first nav item
-			displayView(0);
-		}*/
+		deleteAt10();
 
 	}
 
-	/**
-	 * Slide menu item click listener
-	 * */
+	public void deleteAt10() {
+		AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+		int interval = 600000;
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTimeInMillis(System.currentTimeMillis());
+		calendar.set(Calendar.HOUR_OF_DAY, 13);
+		calendar.set(Calendar.MINUTE, 57);
+
+		manager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), interval, pendingIntent);
+	}
+
 	private class SlideMenuClickListener implements ListView.OnItemClickListener {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-			// display view for selected nav drawer item
+
 			displayView(position);
 		}
 	}
@@ -156,11 +148,11 @@ public class MainActivity extends Activity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		// toggle nav drawer on selecting action bar app icon/title
+
 		if (mDrawerToggle.onOptionsItemSelected(item)) {
 			return true;
 		}
-		// Handle action bar actions click
+
 		switch (item.getItemId()) {
 		case R.id.action_settings:
 			return true;
@@ -169,25 +161,18 @@ public class MainActivity extends Activity {
 		}
 	}
 
-	/***
-	 * Called when invalidateOptionsMenu() is triggered
-	 */
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
-		// if nav drawer is opened, hide the action items
+
 		boolean drawerOpen = mDrawerLayout.isDrawerOpen(mDrawerList);
 		menu.findItem(R.id.action_settings).setVisible(!drawerOpen);
 		return super.onPrepareOptionsMenu(menu);
 	}
 
-	/**
-	 * Diplaying fragment view for selected nav drawer list item
-	 * */
 	private void displayView(int position) {
 
 		FragmentManager fragmentManager = getFragmentManager();
 
-		// update selected item and title, then close the drawer
 		mDrawerList.setItemChecked(position, true);
 		mDrawerList.setSelection(position);
 		if (dbHelper.getAllCategoryFromDB() != null && dbHelper.getAllCategoryFromDB().size() > 0) {
@@ -210,22 +195,17 @@ public class MainActivity extends Activity {
 		getActionBar().setTitle(mTitle);
 	}
 
-	/**
-	 * When using the ActionBarDrawerToggle, you must call it during
-	 * onPostCreate() and onConfigurationChanged()...
-	 */
-
 	@Override
 	protected void onPostCreate(Bundle savedInstanceState) {
 		super.onPostCreate(savedInstanceState);
-		// Sync the toggle state after onRestoreInstanceState has occurred.
+
 		mDrawerToggle.syncState();
 	}
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		// Pass any configuration change to the drawer toggls
+
 		mDrawerToggle.onConfigurationChanged(newConfig);
 	}
 
@@ -241,7 +221,6 @@ public class MainActivity extends Activity {
 				}.getType();
 
 				arrCategories = new Gson().fromJson(imagesString, typeCategoryItemDetails);
-				// downloadSlotImages(arrCategories);
 
 				dbHelper = new DatabaseHelper(getApplicationContext(), arrCategories);
 				dbHelper.getReadableDatabase();
@@ -284,19 +263,24 @@ public class MainActivity extends Activity {
 
 				Log.v("error", new VolleyError(arg0).getMessage());
 
-				Toast.makeText(getApplicationContext(), "Failed to parse " + new VolleyError(arg0).getMessage(), 1)
-						.show();
+				Toast.makeText(getApplicationContext(), "Failed to parse " + new VolleyError(arg0).getMessage(),
+						Toast.LENGTH_LONG).show();
 			}
 		};
 
 		RequestQueue queue = MyVolley.getRequestQueue(getApplicationContext());
-		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getApplicationContext(),
+		final FetchCategoryGetRequest lRequest = new FetchCategoryGetRequest(getApplicationContext(),
 				getString(R.string.API_CATEGORIES), onSuccess, onError);
 		queue.add(lRequest);
 	}
 
 	public ArrayList<Categories> getCategries() {
 		return arrCategories;
+	}
+
+	public void closeActivity() {
+		System.exit(0);
+		finish();
 	}
 
 }

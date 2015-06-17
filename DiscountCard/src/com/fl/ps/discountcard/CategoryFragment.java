@@ -1,13 +1,20 @@
 package com.fl.ps.discountcard;
 
+import java.io.File;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Locale;
 
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -29,10 +36,12 @@ import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.fl.ps.database.DatabaseHelper;
 import com.fl.ps.parsing.CategoryItems;
-import com.fl.ps.requests.FetchCategoryRequest;
+import com.fl.ps.requests.FetchCategoryGetRequest;
+import com.fl.ps.requests.GPSTracker;
 import com.fl.ps.requests.MyVolley;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
@@ -44,11 +53,10 @@ public class CategoryFragment extends Fragment {
 	RecyclerView mRecyclerView;
 	static ArrayList<CategoryItems> deals;
 	ProgressDialog mDialog;
+	private GPSTracker gpsTracker=null;
 	private DatabaseHelper dbHelper;
+	double latitude=0.0,longitude=0.0;
 
-	/**
-	 * Returns a new instance of this fragment for the given category number.
-	 */
 	public static CategoryFragment newInstance(int categoryNumber, String title) {
 		CategoryFragment fragment = new CategoryFragment();
 		Bundle args = new Bundle();
@@ -64,11 +72,7 @@ public class CategoryFragment extends Fragment {
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		// Inflate the layout for this fragment
-		Toast.makeText(getActivity(),
-				"Fragmnet" + getArguments().getInt(ARG_CATEGORY_NUMBER) + getArguments().getString(ARG_CATEGORY_TITLE),
-				Toast.LENGTH_LONG).show();
-
+	
 		View v = inflater.inflate(R.layout.fragment_main, container, false);
 		mRecyclerView = (RecyclerView) v.findViewById(R.id.list);
 		mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -82,9 +86,19 @@ public class CategoryFragment extends Fragment {
 		deals = new ArrayList<CategoryItems>();
 		deals = helper.getAllDeals(getArguments().getString(ARG_CATEGORY_TITLE).replace(" ", "_").toLowerCase(Locale.getDefault()).trim());
 
-		
+		gpsTracker = new GPSTracker(getActivity());
 		if(deals.size()>0)
 		{
+			if(gpsTracker.canGetLocation())
+			{
+				 latitude = gpsTracker.getLatitude();
+                 longitude = gpsTracker.getLongitude();
+                Toast.makeText(getActivity().getApplicationContext(), "Your Location is - \nLat: " + latitude + "\nLong: " + longitude, Toast.LENGTH_LONG).show();
+			}
+			else
+			{
+				gpsTracker.showSettingsAlert();
+			}
 
 			adapter = new DCListAdapter(getActivity().getApplicationContext());
 
@@ -105,12 +119,12 @@ public class CategoryFragment extends Fragment {
 		return v;
 	}
 
-	// //////////////////////////////////////////////////////////////
+	
 
 	class DCListAdapter extends RecyclerView.Adapter<ViewHolder> {
 
 		LayoutInflater inflater;
-		// ArrayList<Database> deals = new ArrayList<Database>();
+	
 		Context context;
 		Bitmap bm;
 		ImageLoader imloader;
@@ -118,20 +132,33 @@ public class CategoryFragment extends Fragment {
 		DCListAdapter(Context context) {
 			this.context = context;
 			inflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			/*DatabaseHelper helper = new DatabaseHelper(getActivity());
-			deals = new ArrayList<CategoryItems>();
-			deals = helper.getAllDeals(helper.getAllCategoryFromDB().size() > 0 ? helper.getAllCategoryFromDB().get(
-					getArguments().getInt(ARG_CATEGORY_NUMBER)) : "clothing");*/
-			Log.v("deals", "size " + deals.size());
-
 			imloader = ImageLoader.getInstance();
 			imloader.init(ImageLoaderConfiguration.createDefault(context));
+			
+			Location selected_location=new Location("current");
+		    selected_location.setLatitude(latitude);
+		    selected_location.setLongitude(longitude);
+		   
+			
+			for(int i = 0 ;i< deals.size();i++)
+			{
+				 Location near_locations=new Location("loc");
+				    near_locations.setLatitude((deals.get(i).getLatitude()));
+				    near_locations.setLongitude((deals.get(i).getLongitude()));
+				    
+				    double distance=selected_location.distanceTo(near_locations);
+				    
+				    deals.get(i).setDistance(distance);
+			}
+			
+			Collections.sort(deals, new CategoryItems());
+			
 
 		}
 
 		@Override
 		public long getItemId(int position) {
-			// TODO Auto-generated method stub
+			
 			return 0;
 		}
 
@@ -141,14 +168,25 @@ public class CategoryFragment extends Fragment {
 			return deals != null ? deals.size() : 0;
 		}
 
+		@SuppressWarnings("deprecation")
 		@Override
 		public void onBindViewHolder(ViewHolder holder, int position) {
 			
 			holder.name.setText(deals.get(position).getName());
-
-			imloader.displayImage(deals.get(position).getImageUrl(), holder.image);
+			
+			  File file = imloader.getDiscCache().get(deals.get(position).getImageUrl());  
+			  if (!file.exists()) {  
+			       DisplayImageOptions options = new DisplayImageOptions.Builder()  
+			       .cacheOnDisc()  
+			       .build();  
+			       imloader.displayImage(deals.get(position).getImageUrl(), holder.image, options);  
+			  }  
+			  else {  
+				  holder.image.setImageURI(Uri.parse(file.getAbsolutePath()));  
+			  }  
 
 			holder.location.setText(deals.get(position).getAddress());
+			holder.discount.setText(deals.get(position).getDistance()+"");
 
 			holder.rating.setRating((Float.parseFloat(deals.get(position).getRating()) / 100) * 5);
 
@@ -163,17 +201,21 @@ public class CategoryFragment extends Fragment {
 		}
 
 	}
+	
+	
 
 	public static class ViewHolder extends RecyclerView.ViewHolder {
 
 		ImageView image;
-		TextView name, location;
+		TextView name, location,discount;
 		RatingBar rating;
+		
 
 		public ViewHolder(View itemView) {
 			super(itemView);
 			name = (TextView) itemView.findViewById(R.id.item_name);
 			location = (TextView) itemView.findViewById(R.id.item_location);
+			discount = (TextView) itemView.findViewById(R.id.item_discount);
 			image = (ImageView) itemView.findViewById(R.id.item_image);
 			rating = (RatingBar) itemView.findViewById(R.id.rating);
 
@@ -187,44 +229,7 @@ public class CategoryFragment extends Fragment {
 
 	}
 
-	/*
-	 * private void downloadImages(String path) {
-	 * 
-	 * try { if (path == null) { return; } final DisplayImageOptions optionsCard
-	 * = new DisplayImageOptions.Builder()
-	 * .cacheInMemory(true).cacheOnDisc(true).build();
-	 * 
-	 * String currentItem = path;
-	 * 
-	 * if (currentItem != null) { imageLoader.loadImage(currentItem,
-	 * optionsCard, new ImageLoadingListener() {
-	 * 
-	 * @Override public void onLoadingStarted(String arg0, View arg1) {
-	 * 
-	 * }
-	 * 
-	 * @Override public void onLoadingFailed(String arg0, View arg1, FailReason
-	 * arg2) { Log.e("Image loading error", arg2.toString()); }
-	 * 
-	 * @Override public void onLoadingComplete(String arg0, View arg1, Bitmap
-	 * bmp) {
-	 * 
-	 * HashMap<String, Object> slotItemMap = new HashMap<String, Object>();
-	 * slotItemMap.put("image", new SoftReference<Bitmap>(bmp));
-	 * slotItemMap.put("id", id);
-	 * 
-	 * slotImages.add(slotItemMap);
-	 * 
-	 * }
-	 * 
-	 * @Override public void onLoadingCancelled(String arg0, View arg1) {
-	 * 
-	 * } }); }
-	 * 
-	 * } catch (Exception e) { e.printStackTrace(); }
-	 * 
-	 * }
-	 */
+	
 
 	public void getCategoriesDataFromServer(String title) {
 
@@ -267,12 +272,12 @@ public class CategoryFragment extends Fragment {
 
 				Log.v("error", new VolleyError(arg0).getMessage());
 
-				Toast.makeText(getActivity(), "Failed to parse " + new VolleyError(arg0).getMessage(), 1).show();
+				Toast.makeText(getActivity(), "Failed to parse " + new VolleyError(arg0).getMessage(), Toast.LENGTH_LONG).show();
 			}
 		};
 
 		RequestQueue queue = MyVolley.getRequestQueue(getActivity().getApplicationContext());
-		final FetchCategoryRequest lRequest = new FetchCategoryRequest(getActivity().getApplicationContext(),
+		final FetchCategoryGetRequest lRequest = new FetchCategoryGetRequest(getActivity().getApplicationContext(),
 				getString(R.string.API_CATEGORY_DETAILS) + title, onSuccess, onError);
 		queue.add(lRequest);
 	}

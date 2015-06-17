@@ -10,39 +10,36 @@ import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.PointF;
 import android.util.Log;
 
+import com.fl.ps.discountcard.R;
 import com.fl.ps.parsing.Categories;
 import com.fl.ps.parsing.CategoryItems;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 	String TAG = "DATABASEHELPER";
 
-	private static final String DATABASE_NAME = "discountcoupon.db";
-	private static final int DATABASE_VERSION = 3;
-
-	private String ALL_CATEGORY_TABLE = "tab_all_categories";
 	private String CATEGORY = "col_category";
-	
+	private static int DATABASE_VERSION = 1;
 
 	private ArrayList<Database> db_data;
-	
-	SQLiteDatabase dba;
-	
-	SharedPreferences sharedpreferences ;
-	String DCPrefs;
+	private Context mContext;
+
+	SharedPreferences sharedpreferences;
 
 	public DatabaseHelper(Context context, ArrayList<Categories> catageor) {
-		super(context, DATABASE_NAME, null, DATABASE_VERSION);
+		super(context, context.getString(R.string.DATABASE_NAME), null, DATABASE_VERSION);
 		db_data = getCategoriesTableName(catageor);
-		
-		sharedpreferences = context.getSharedPreferences(DCPrefs, Context.MODE_PRIVATE);
+		mContext = context;
+		sharedpreferences = context.getSharedPreferences(context.getString(R.string.PREFS_DC), Context.MODE_PRIVATE);
 
 	}
 
 	public DatabaseHelper(Context context) {
-		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		sharedpreferences = context.getSharedPreferences(DCPrefs, Context.MODE_PRIVATE);
+		super(context, context.getString(R.string.DATABASE_NAME), null, DATABASE_VERSION);
+		mContext = context;
+		sharedpreferences = context.getSharedPreferences(context.getString(R.string.PREFS_DC), Context.MODE_PRIVATE);
 
 	}
 
@@ -63,16 +60,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 
 		Log.v(TAG, "onCreate");
-		
+
 		Editor editor = sharedpreferences.edit();
-		editor.putString("tableexists", "true");
+		editor.putString(mContext.getString(R.string.PREFS_DC_KEY_TABLE_EXISTS), "true");
 		editor.commit();
 
-		db.execSQL(" create table if not exists " + ALL_CATEGORY_TABLE
+		db.execSQL(" create table if not exists " + mContext.getString(R.string.ALL_CATEGORY_TABLE)
 				+ "(category_id integer primary key autoincrement not null, " + CATEGORY + " text unique "
 				+ " ,category_key text unique);");
 
-		
 		for (int i = 0; i < db_data.size(); i++) {
 			db.execSQL(createTable(db_data.get(i)));
 		}
@@ -81,9 +77,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
-		db.execSQL("DROP TABLE IF EXISTS " + ALL_CATEGORY_TABLE);
+		db.execSQL("DROP TABLE IF EXISTS " + mContext.getString(R.string.ALL_CATEGORY_TABLE));
 
-		
 		for (int i = 0; i < db_data.size(); i++) {
 			db.execSQL("DROP TABLE IF EXISTS " + db_data.get(i).getTableName());
 		}
@@ -137,7 +132,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			values.put("col_category", categories.get(i).getCategoryName());
 			values.put("category_key", categories.get(i).getId());
 
-			db.insert(ALL_CATEGORY_TABLE, null, values);
+			db.insert(mContext.getString(R.string.ALL_CATEGORY_TABLE), null, values);
 
 		}
 		db.close();
@@ -147,7 +142,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 		ArrayList<String> category;
 		try {
-			String query = "Select * from " + ALL_CATEGORY_TABLE;
+			String query = "Select * from " + mContext.getString(R.string.ALL_CATEGORY_TABLE);
 			SQLiteDatabase db = this.getWritableDatabase();
 			Cursor curos = db.rawQuery(query, null);
 			category = new ArrayList<String>();
@@ -156,16 +151,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 					category.add(curos.getString(1));
 				} while (curos.moveToNext());
 			}
-			
+
 			return category;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-		
 			e.printStackTrace();
 			return null;
 		}
 
-		
 	}
 
 	public ArrayList<CategoryItems> getAllDeals(String tablename) {
@@ -188,8 +180,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 					deal_data.setDescription(curos.getString(5));
 					deal_data.setRating(curos.getString(6));
 					deal_data.setId(curos.getString(7));
-					deal_data.setLongitude(curos.getString(8));
-					deal_data.setLatitude(curos.getString(9));
+					deal_data.setLongitude(curos.getDouble(8));
+					deal_data.setLatitude(curos.getDouble(9));
 					deal_data.setImageUrl(curos.getString(10));
 
 					deals.add(deal_data);
@@ -200,12 +192,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 				Log.v("deals", deals.get(i).getName());
 			return deals;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}
 
-		
 	}
 	
 	
